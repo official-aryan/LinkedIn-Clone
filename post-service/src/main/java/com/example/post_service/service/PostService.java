@@ -1,12 +1,14 @@
 package com.example.post_service.service;
 
 import com.example.post_service.entity.Post;
+import com.example.post_service.event.PostCreatedEvent;
 import com.example.post_service.execption.ResourceNotFoundException;
 import com.example.post_service.payload.PostCreateRequestDto;
 import com.example.post_service.payload.PostDto;
 import com.example.post_service.repository.PostRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,10 +20,12 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final ModelMapper modelMapper;
+    private final KafkaTemplate<Long, PostCreatedEvent> kafkaTemplate;
 
-    public PostService(PostRepository postRepository, ModelMapper modelMapper) {
+    public PostService(PostRepository postRepository, ModelMapper modelMapper, KafkaTemplate<Long, PostCreatedEvent> kafkaTemplate) {
         this.postRepository = postRepository;
         this.modelMapper = modelMapper;
+        this.kafkaTemplate = kafkaTemplate;
     }
 
 
@@ -31,6 +35,15 @@ public class PostService {
         Post posts = modelMapper.map(postCreateRequestDto, Post.class);
         posts.setUserId(userId);
         Post save = postRepository.save(posts);
+
+        PostCreatedEvent postCreatedEvent= PostCreatedEvent.builder()
+                        .postId(save.getId())
+                                .creatorId(save.getUserId())
+                                        .context(save.getContext())
+                                                .build();
+
+        kafkaTemplate.send("post-Created",postCreatedEvent);
+
         log.info("Post Created");
         return modelMapper.map(save,PostDto.class);
 

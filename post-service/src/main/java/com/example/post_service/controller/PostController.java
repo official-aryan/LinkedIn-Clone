@@ -33,13 +33,7 @@ public class PostController {
         return new ResponseEntity<>(post, HttpStatus.CREATED);
 
     }
-    @PostMapping(path = "/createPost2")
-    public ResponseEntity<PostDto> createPostBy2(@RequestBody PostCreateRequestDto postCreateRequestDto, HttpServletRequest httpServletRequest)
-    {
-        PostDto post = postService.createPost(postCreateRequestDto, 2L);
-        return new ResponseEntity<>(post, HttpStatus.CREATED);
 
-    }
 
     @GetMapping(path = "/getAllPosts")
     public ResponseEntity<List<PostDto>> getAll()
